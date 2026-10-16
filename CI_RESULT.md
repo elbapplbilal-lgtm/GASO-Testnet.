@@ -1,6 +1,6 @@
 # GASO CI result
 
-- Source commit: `0a2b48119be0a261b6e8986ed744699898457e97`
+- Source commit: `00ee860b9b528cb89f10640cfd2534add156c461`
 - Compilation and tests: **PASS**
 - Dependency installation: success
 - Test step: success
@@ -17,8 +17,8 @@ Compiled 65 Solidity files successfully (evm target: cancun).
 
 
   Real EntryPoint ERC-4337 integration (LOCAL hardhat only)
-    ✔ transfers 10 GASO with 0 ETH in smart account, pays GASO to Paymaster, and burns ETH deposit for gas (650ms)
-    ✔ rejects sponsored operations when the Paymaster is paused (68ms)
+    ✔ transfers 10 GASO with 0 ETH in smart account, pays GASO to Paymaster, and burns ETH deposit for gas (618ms)
+    ✔ rejects sponsored operations when the Paymaster is paused (83ms)
 
   GASO testnet prototype (unit tests only)
     ✔ mints exactly one million tokens to the initial holder
@@ -26,6 +26,6 @@ Compiled 65 Solidity files successfully (evm target: cancun).
     ✔ restricts test price changes and pause controls to owner
 
 
-  5 passing (767ms)
+  5 passing (754ms)
 
 \`\`\`
