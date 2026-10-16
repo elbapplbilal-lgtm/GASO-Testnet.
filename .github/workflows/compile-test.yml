@@ -1,17 +1,60 @@
 name: GASO Solidity CI
 on:
   push:
-  pull_request:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Install dependencies
+        id: install
         run: npm install --no-audit --no-fund
-      - name: Compile and run basic unit tests
-        run: npm test
+      - name: Compile and test real local EntryPoint
+        id: tests
+        run: |
+          npm test > ci-test-output.txt 2>&1
+          exit_code=$?
+          cat ci-test-output.txt
+          exit $exit_code
+      - name: Save verifiable CI result in repository
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          if [ "${{ steps.tests.outcome }}" = "success" ]; then
+            result="PASS"
+          else
+            result="FAIL"
+          fi
+          {
+            echo "# GASO CI result"
+            echo
+            echo "- Source commit: \`$GITHUB_SHA\`"
+            echo "- Compilation and tests: **$result**"
+            echo "- Dependency installation: ${{ steps.install.outcome }}"
+            echo "- Test step: ${{ steps.tests.outcome }}"
+            echo "- Test environment: GitHub Actions / local Hardhat (NOT Base Sepolia)"
+            echo
+            echo "## Test output (last 100 lines)"
+            echo '\`\`\`text'
+            if [ -f ci-test-output.txt ]; then
+              tail -100 ci-test-output.txt
+            else
+              echo "Tests did not start or did not produce output."
+            fi
+            echo '\`\`\`'
+          } > CI_RESULT.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CI_RESULT.md
+          git diff --cached --quiet || git commit -m "ci: record Solidity test result"
+          git push origin HEAD:main
