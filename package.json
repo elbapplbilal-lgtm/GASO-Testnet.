@@ -1,14 +1,16 @@
 {
   "name": "gaso-testnet",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Experimental GASO ERC-20 + ERC-4337 paymaster",
+  "description": "Educational GASO ERC-20 and OpenZeppelin/ERC-4337 Paymaster testnet prototype",
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "test:integration": "hardhat test test/erc4337.integration.test.js"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "5.7.0"
+    "@openzeppelin/contracts": "5.7.0",
+    "@account-abstraction/contracts": "0.7.0"
   },
   "devDependencies": {
     "hardhat": "2.26.3",
