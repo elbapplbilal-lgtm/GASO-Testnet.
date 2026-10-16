@@ -122,4 +122,54 @@ describe("Real EntryPoint ERC-4337 integration (LOCAL hardhat only)", function (
     )).to.be.reverted;
     expect(await ctx.token.balanceOf(ctx.recipient.address)).to.equal(0n);
   });
+
+  it("rejects operations with an invalid owner signature", async function () {
+    const ctx = await setup();
+    const call = ctx.wallet.interface.encodeFunctionData("execute", [
+      await ctx.token.getAddress(), 0,
+      ctx.token.interface.encodeFunctionData("transfer", [ctx.recipient.address, 1n])
+    ]);
+    const { op, hash } = await signedOperation(ctx, call);
+    op.signature = await ctx.recipient.signMessage(ethers.getBytes(hash));
+    await expect(ctx.ep.connect(ctx.bundler).handleOps(
+      [op], ctx.bundler.address, { gasLimit: 7000000 }
+    )).to.be.reverted;
+    expect(await ctx.token.balanceOf(ctx.recipient.address)).to.equal(0n);
+    expect(await ethers.provider.getBalance(ctx.walletAddress)).to.equal(0n);
+  });
+
+  it("rejects operations when GASO allowance for Paymaster is revoked", async function () {
+    const ctx = await setup();
+    // The owner revokes allowance directly; this setup call does not cost
+    // the smart account any ETH (the owner submits the transaction).
+    const revoke = ctx.token.interface.encodeFunctionData("approve", [
+      await ctx.pm.getAddress(), 0n
+    ]);
+    await (await ctx.wallet.execute(await ctx.token.getAddress(), 0, revoke)).wait();
+    const call = ctx.wallet.interface.encodeFunctionData("execute", [
+      await ctx.token.getAddress(), 0,
+      ctx.token.interface.encodeFunctionData("transfer", [ctx.recipient.address, 1n])
+    ]);
+    const { op } = await signedOperation(ctx, call);
+    await expect(ctx.ep.connect(ctx.bundler).handleOps(
+      [op], ctx.bundler.address, { gasLimit: 7000000 }
+    )).to.be.reverted;
+    expect(await ctx.token.balanceOf(ctx.recipient.address)).to.equal(0n);
+  });
+
+  it("rejects operations if Paymaster's ETH deposit is fully withdrawn", async function () {
+    const ctx = await setup();
+    const deposit = await ctx.ep.balanceOf(await ctx.pm.getAddress());
+    await (await ctx.pm.withdrawDeposit(ctx.owner.address, deposit)).wait();
+    expect(await ctx.ep.balanceOf(await ctx.pm.getAddress())).to.equal(0n);
+    const call = ctx.wallet.interface.encodeFunctionData("execute", [
+      await ctx.token.getAddress(), 0,
+      ctx.token.interface.encodeFunctionData("transfer", [ctx.recipient.address, 1n])
+    ]);
+    const { op } = await signedOperation(ctx, call);
+    await expect(ctx.ep.connect(ctx.bundler).handleOps(
+      [op], ctx.bundler.address, { gasLimit: 7000000 }
+    )).to.be.reverted;
+    expect(await ctx.token.balanceOf(ctx.recipient.address)).to.equal(0n);
+  });
 });
