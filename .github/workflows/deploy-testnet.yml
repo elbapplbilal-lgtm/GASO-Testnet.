@@ -1,0 +1,32 @@
+name: GASO deploy to Base Sepolia (manual only)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: testnet
+    env:
+      BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+      TESTNET_DEPLOYER_KEY: ${{ secrets.TESTNET_DEPLOYER_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate testnet prerequisites
+        run: |
+          if [ -z "$BASE_SEPOLIA_RPC_URL" ] || [ -z "$TESTNET_DEPLOYER_KEY" ]; then
+            echo "Set dedicated testnet secrets BASE_SEPOLIA_RPC_URL and TESTNET_DEPLOYER_KEY in repository settings."
+            exit 1
+          fi
+      - name: Install and test
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+      - name: Deploy contracts (requires user's testnet-only secrets and test ETH)
+        run: npm run deploy:base-sepolia
